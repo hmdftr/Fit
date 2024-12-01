@@ -10,28 +10,26 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "Fit/AbilitySystem/FitAbilitySystemComponent.h"
+#include "Fit/AbilitySystem/FitAttributeSet.h"
+#include "Fit/Player/FitPlayerState.h"
+#include "Fit/UI/FitHUD.h"
+
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
-//////////////////////////////////////////////////////////////////////////
-// AFitCharacter
 
 AFitCharacter::AFitCharacter()
 {
-	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 		
-	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
-
-	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
-	// instead of recompiling to adjust them
+	
 	GetCharacterMovement()->JumpZVelocity = 700.f;
 	GetCharacterMovement()->AirControl = 0.35f;
 	GetCharacterMovement()->MaxWalkSpeed = 500.f;
@@ -39,29 +37,41 @@ AFitCharacter::AFitCharacter()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
-	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f; // The camera follows at this distance behind the character	
-	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
+	CameraBoom->TargetArmLength = 400.0f;	
+	CameraBoom->bUsePawnControlRotation = true; 
 
-	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
-	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);   
+	FollowCamera->bUsePawnControlRotation = false; 
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
+void AFitCharacter::PossessedBy(AController* NewController)
+{
+	//Super::PossessedBy(NewController);
+
+	InitAbilitySystemComponent();
+	GiveDefaultAbilities();
+	InitDefaultAttributes();
+	InitHUD();
+}
+
+void AFitCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	InitAbilitySystemComponent();
+	InitDefaultAttributes();
+	InitHUD();}
+
 
 void AFitCharacter::NotifyControllerChanged()
 {
 	Super::NotifyControllerChanged();
 
-	// Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -89,6 +99,27 @@ void AFitCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	else
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+	}
+}
+
+void AFitCharacter::InitAbilitySystemComponent()
+{
+	AFitPlayerState* FitPlayerState = GetPlayerState<AFitPlayerState>();
+	check(FitPlayerState);
+	AbilitySystemComponent =  CastChecked<UFitAbilitySystemComponent>(
+		FitPlayerState->GetAbilitySystemComponent());
+	AbilitySystemComponent->InitAbilityActorInfo(FitPlayerState, this);
+	AttributeSet = FitPlayerState->GetAttributeSet();
+}
+
+void AFitCharacter::InitHUD() const
+{
+	if(const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		if(AFitHUD* FitHUD = Cast<AFitHUD>(PlayerController->GetHUD()))
+		{
+			FitHUD->Init();
+		}
 	}
 }
 

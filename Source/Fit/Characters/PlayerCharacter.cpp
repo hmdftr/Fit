@@ -3,7 +3,7 @@
 #include "Fit/AbilitySystem/FitAbilitySystemComponent.h"
 #include "Fit/AbilitySystem/FitAttributeSet.h"
 #include "Fit/Player/FitPlayerState.h"
-//#include "UI/FabHUD.h"
+#include "Fit/UI/FitHUD.h"
 
 
 APlayerCharacter::APlayerCharacter()
@@ -44,9 +44,9 @@ void APlayerCharacter::InitHUD() const
 {
 	if(const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
-		// if(AFitHUD* FitHUD = Cast<AFitHUD>(PlayerController->GetHUD()))
-		// {
-		// 	FitHUD->Init();
-		// }
+		 if(AFitHUD* FitHUD = Cast<AFitHUD>(PlayerController->GetHUD()))
+		 {
+		 	FitHUD->Init();
+		 }
 	}
 }

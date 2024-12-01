@@ -6,6 +6,7 @@
 #include "GameFramework/HUD.h"
 #include "FitHUD.generated.h"
 
+class UAttributesWidget;
 /**
  * 
  */
@@ -13,4 +14,14 @@ UCLASS()
 class FIT_API AFitHUD : public AHUD
 {
 	GENERATED_BODY()
+public:
+	void Init();
+	
+protected:
+	//UPROPERTY(EditDefaultsOnly)
+	//TSubclassOf<UAttributesWidget> AttributeWidgetClass;
+
+private:
+	//UPROPERTY()
+	//TObjectPtr<UAttributesWidget> AttributeWidget;
 };
